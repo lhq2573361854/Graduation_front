@@ -1,5 +1,6 @@
 import store from '../store'
 import request from "@/axios";
+import Vue from 'vue'
 
  function S4() {
     return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
@@ -99,3 +100,21 @@ export function replacePrefix(str){
      let reg = /[a-z]*_/
      return str.replace(reg,'')
 }
+
+export const postData = Vue.axios.create({
+    headers:{
+        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    },
+    transformRequest: [function transformRequest(data) {
+        let _data = Object.keys(data)
+        return encodeURI(_data.map(name => `${name}=${data[name]}`).join('&'));
+    }],
+})
+
+postData.interceptors.response.use((response) => {
+    return response.data
+}, (error) => {
+    error.data = {}
+    error.data.msg = '请求超时或服务器异常，请检查网络或联系管理员！'
+    return Promise.resolve(error)
+})

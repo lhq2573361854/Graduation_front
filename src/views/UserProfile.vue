@@ -33,11 +33,18 @@
               <v-container>
                 <v-row>
                   <v-col cols="12">
-                    <v-text-field
-                        label="Password*"
-                        v-model="editedItem.value"
-                        required
-                    ></v-text-field>
+                    <v-form>
+                      <v-text-field
+                          :label="editedItem.category"
+                          v-model="editedItem.value"
+                          type="password"
+                          :error-messages="passwordErrorMessage"
+                          @blur="$v.editedItem.value.$touch()"
+                          @input="$v.editedItem.value.$touch()"
+                          required
+                      ></v-text-field>
+                    </v-form>
+
                   </v-col>
                 </v-row>
 
@@ -75,15 +82,25 @@ import request from "@/axios";
 import {mapGetters,mapMutations} from 'vuex'
 import {assertUserLogin} from "@/utils";
 import * as finalVaribales from "@/utils/finalVariables";
+import {validationMixin} from "vuelidate";
+import {minLength, required} from 'vuelidate/lib/validators'
 
 export default {
   name:'UserProfile',
-   mounted() {
+  mixins: [validationMixin],
+  mounted() {
      request.get("/field-explain/getAllFieldExplain").then(result=>{
        this.filedExplain = result.data
        this.tableLoading = false;
      })
-
+  },
+  validations:{
+    editedItem:{
+      value:{
+        required,
+        minLength:minLength(3)
+      }
+    },
   },
   data () {
     return {
@@ -106,7 +123,7 @@ export default {
       tagName:'',
       loading:false,
       tableLoading:true,
-      allowUpdate:["userName","userPass","userEmail","userPhone"]
+      allowUpdate:["userPass"]
     }
   },
   created() {
@@ -116,24 +133,26 @@ export default {
     ...mapMutations(["updateCurrentUser"]),
     updateUserInfo(item){
       this.editedIndex = this.desserts.indexOf(item)
-      console.log("item",item)
       this.editedItem = Object.assign({},item)
-      this.tagName = this.filedExplain.find(value => item.category === value.fieldExplain).fieldName
+      this.tagName = this.filedExplain.find(value => item.category === value.fieldExplain)["fieldName"].replace(/[a-zA-Z]*_/,"")
       this.dialog = true
     },
     updateUser(){
-      this.loading = true
-      Object.assign(this.desserts[this.editedIndex],this.editedItem)
-      let parse = JSON.parse(sessionStorage.getItem("currentUser"));
-      parse.userinfo[this.tagName] = this.editedItem.value
-      sessionStorage.setItem("currentUser",JSON.stringify(parse),3600)
-      localStorage.setItem("currentUser",JSON.stringify(parse),3600)
-      this.updateCurrentUser(parse)
-      console.log(parse)
-      request.post("/user/updateUserById",parse.userinfo).then(result=>{
-        this.loading =!result
-        this.dialog = !result
-      })
+      this.$v.$touch()
+      if(!this.$v.$invalid){
+        this.loading = true
+        let parse = JSON.parse(sessionStorage.getItem("currentUser"));
+        parse.userinfo[this.tagName] = this.editedItem.value
+        console.log(parse)
+        request.post("/update/user",parse.userinfo).then(result=>{
+          this.loading =!result
+          this.dialog = !result
+          parse.userinfo = result.data
+          this.updateCurrentUser(parse)
+          sessionStorage.setItem("currentUser",parse,3600)
+        })
+      }
+
 
     },
     getRole(roles){
@@ -179,6 +198,12 @@ export default {
     },
     getFieldName(){
       return (item)=> this.filedExplain.find(value => item.category === value.fieldExplain).fieldName
+    },
+    passwordErrorMessage(){
+      const error = []
+      !this.$v.editedItem.value.required && error.push('密码不能为空')
+      !this.$v.editedItem.value.minLength && error.push('至少有三位')
+      return error;
     }
   },
   watch:{
@@ -186,7 +211,8 @@ export default {
       let data = this.getUserInfo || JSON.parse(sessionStorage.getItem("currentUser")) || JSON.parse(localStorage.getItem("currentUser"))
       if(data) this.setBasicInfo(data)
     }
-  }
+  },
+
 }
 </script>
 

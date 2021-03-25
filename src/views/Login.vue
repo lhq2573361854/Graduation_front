@@ -230,13 +230,14 @@
 
 
 <script>
-import request from "@/axios";
 import {mapMutations} from 'vuex'
 import { validationMixin } from 'vuelidate'
 import { required,minLength } from 'vuelidate/lib/validators'
 import {phone} from "@/validate";
 import {getImg,getPhoneCode} from "@/utils";
 import * as final_variable from "@/utils/finalVariables";
+
+const {postData} = require("@/utils");
 
 export default {
   name: "Login",
@@ -281,8 +282,6 @@ export default {
     },
     commonFormData:['username','password','validateCode'],
     phoneFormData:['phone','phoneMessage'],
-
-
   },
   mixins:[validationMixin],
   computed: {
@@ -354,13 +353,13 @@ export default {
         if(this.$v.commonFormData.$invalid)
           return
         this.loading = true
-        result = await request.post(final_variable.login_path, this.commonFormData)
+        result = await postData.post(final_variable.login_path, this.commonFormData)
         this.showData(result)
       } else if(val === this.message_login_path){
         if(this.$v.phoneFormData.$invalid)
           return
         this.loading = true
-        result = await request.post(final_variable.message_login_path, this.phoneFormData)
+        result = await postData.post(final_variable.message_login_path, this.phoneFormData)
         this.showData(result)
       }
 

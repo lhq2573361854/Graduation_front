@@ -54,6 +54,12 @@
             @blur="$v.email.$touch()"
             autocomplete="off"
         ></v-text-field>
+        <v-combobox
+            v-model="select"
+            :items="items"
+            label="Sex"
+            dense
+        ></v-combobox>
         <v-text-field
             v-model="telPhoneNumber"
             :error-messages="telPhoneNumberErrors"
@@ -129,9 +135,9 @@
 import { validationMixin } from 'vuelidate'
 import { required, email,minLength,sameAs } from 'vuelidate/lib/validators'
 import {phone} from "@/validate";
-import request from "@/axios";
 import VDistpicker from 'v-distpicker'
 import {show_time} from "@/utils/finalVariables";
+import request from "@/axios";
 
 export default {
   mixins: [validationMixin],
@@ -173,7 +179,12 @@ export default {
     area:'裕安区',
     snackbar:false,
     snackbarText:'',
-    timeout:show_time
+    timeout:show_time,
+    items:[
+        '男',
+        '女'
+    ],
+    select:'男'
   }),
 
   computed: {
@@ -237,7 +248,7 @@ export default {
         userEmail:this.email,
         userPhone:this.telPhoneNumber,
         userCountry:'中国',
-        userSex:'男',
+        userSex:this.select,
         userProvince:this.province,
         userCity:this.city,
         userDistrict:this.area
@@ -258,6 +269,7 @@ export default {
     async submit () {
       this.$v.$touch()
       if(!this.$v.$invalid){
+        console.log(1)
         const result = await request.post("/code/addUser",this.getUser)
         this.snackbar = !!result
         this.snackbarText = result.msg
@@ -277,7 +289,7 @@ export default {
 <style>
 
 .distpicker-address-wrapper select{
-  width: 30% !important;
+  width: 32% !important;
   margin: 0 3px;
 }
 </style>
